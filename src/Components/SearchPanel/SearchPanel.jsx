@@ -1,57 +1,81 @@
 import { Component } from 'react';
 import { Input } from 'antd';
-import debounce from 'lodash/debounce';
+import PropTypes from 'prop-types';
+import debounce from 'lodash.debounce';
 import './SearchPanel.css';
 
-class SearchPanel extends Component {
+export default class SearchPanel extends Component {
   constructor(props) {
     super(props);
+    
+    const { onSearch } = this.props;
+    this.debouncedOnSearch = debounce(onSearch, 1000);
+
     this.state = {
-      activeButton: 'search', // предположим, что по умолчанию активна кнопка "Search"
+      activeButton: 'search',
+      searchTerm: '',
     };
 
-    // Создаем debounced версию метода onSearch, который передается в props
-    this.debouncedOnSearch = debounce(this.props.onSearch, 1000);
+    this.handleSearchChange = this.handleSearchChange.bind(this);
+    this.handleButtonClick = this.handleButtonClick.bind(this);
+  }
+
+  handleButtonClick = (buttonName) => {
+    this.setActiveButton(buttonName);
+
+    const { onSearch, onRated } = this.props;
+    const { searchTerm } = this.state;
+
+    if (buttonName === 'search') {
+      onSearch(searchTerm);
+    } else {
+      onRated();
+    }
+  };
+
+  handleSearchChange(event) {
+    this.setState({ searchTerm: event.target.value });
+    this.debouncedOnSearch(event.target.value);
   }
 
   setActiveButton = (buttonName) => {
     this.setState({ activeButton: buttonName });
   };
 
-  // Метод для обработки изменения поля ввода
-  handleSearchChange = (event) => {
-    // Вызываем debounced метод onSearch
-    this.debouncedOnSearch(event.target.value);
-  };
-
   render() {
-    const { activeButton } = this.state;
+    const { activeButton, searchTerm } = this.state;
     return (
       <div className="search-panel">
         <div className="button-box">
           <button
             className={`search-btn ${activeButton === 'search' ? 'active' : ''}`}
             type="button"
-            onClick={() => this.setActiveButton('search')}
+            onClick={() => this.handleButtonClick('search')}
           >
             Search
           </button>
           <button
             className={`rated-btn ${activeButton === 'rated' ? 'active' : ''}`}
             type="button"
-            onClick={() => this.setActiveButton('rated')}
+            onClick={() => this.handleButtonClick('rated')}
           >
             Rated
           </button>
         </div>
-        <Input
-          className="search-input"
-          placeholder="Type to search..."
-          onChange={this.handleSearchChange}
-        />
+        {activeButton === 'search' && (
+          <Input
+            className="search-input"
+            placeholder="Type to search..."
+            value={searchTerm}
+            onChange={this.handleSearchChange}
+          />
+        )}
       </div>
     );
   }
 }
 
-export default SearchPanel;
+SearchPanel.propTypes = {
+  onSearch: PropTypes.func.isRequired,
+  onRated: PropTypes.func.isRequired
+};

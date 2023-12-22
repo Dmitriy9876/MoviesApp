@@ -1,21 +1,29 @@
+import PropTypes from 'prop-types';
 import { Pagination } from 'antd';
 import './Pagination.css';
 
-const PaginationComponent = ({ current, total, onChange }) => {
-  const pageSize = 6;
+export default function PaginationComponent({ current, total, onChange }) {
+  const pageSize = 20;
   const maxPages = 500;
-  const maxTotal = pageSize * maxPages; // Максимум 3000 фильмов
-  const adjustedTotal = Math.min(total, maxTotal); // Не превышает максимальное число фильмов
+  const maxTotal = pageSize * maxPages;
+  const adjustedTotal = Math.min(total, maxTotal);
+  const shouldShowPagination = !(current === 1 && total <= pageSize);
 
   return (
-    <Pagination
-      current={current}
-      total={adjustedTotal} // Используем скорректированное общее количество
-      onChange={onChange}
-      pageSize={pageSize}
-      showSizeChanger={false}
-    />
+    shouldShowPagination && (
+      <Pagination
+        current={current}
+        total={adjustedTotal}
+        onChange={onChange}
+        pageSize={pageSize}
+        showSizeChanger={false}
+      />
+    )
   );
-};
+}
 
-export default PaginationComponent;
+PaginationComponent.propTypes = {
+  current: PropTypes.number.isRequired,
+  total: PropTypes.number.isRequired,
+  onChange: PropTypes.func.isRequired
+};

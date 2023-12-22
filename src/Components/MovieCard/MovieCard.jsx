@@ -1,53 +1,86 @@
+import { Component } from 'react';
 import PropTypes from 'prop-types';
 import { format } from 'date-fns';
+import { Rate } from 'antd';
 import TrimText from '../../services/TrimText';
+import TruncatedTitle from '../../services/TruncatedTitle';
 import './MovieCard.css';
 
-function MovieCard({ movieTitle, genres, description, releaseDate, imgPath }) {
+export default class MovieCard extends Component {
 
-  // if (!imgPath) return null;
-  
-  const safeGenres = genres || [];
+  handleRatingChange = (newRating) => {
+    const { movieId, movieDBApi, guestSessionId, onRatingChange } = this.props;
+    movieDBApi.rateMovie(movieId, newRating, guestSessionId)
+      .then(() => {
+        onRatingChange(movieId, newRating);
+      })
+      .catch(error => {
+        console.error('Error updating rating', error);
+      });
+  };
 
-  const genresElement = safeGenres.map(genreItem => (
-    <li key={genreItem.id} className='genresList__item'>{genreItem.name}</li>
-  ));
+  getRatingClass = () => {
+    const { rating } = this.props;
+    if (rating >= 7) return 'rating-high';
+    if (rating >= 5) return 'rating-mid';
+    if (rating >= 3) return 'rating-low';
+    return 'rating-very-low';
+  };
 
-  const formattedDate = format(new Date(releaseDate), 'MMMM d, yyyy');
-  
-  const shortDesc = TrimText(description, 200);
-  
-  const imgSrc = `http://image.tmdb.org/t/p/w500${imgPath}`;
+  render() {
+    const { movieTitle, description, releaseDate, imgPath, rating, genres, userRating } = this.props;
 
-  return (
-    <li className='movieCard'>
-      <img className="movieImg" src={imgSrc} alt={movieTitle} />
-      <div>
-        <h5 className='movieTitle'>{movieTitle}</h5>
-        <span className='releaseDate'>{formattedDate}</span>
-        <ul className='genresList'>
-          {genresElement}
-        </ul>
-        <p className='description'>{shortDesc}</p>
-      </div>
-    </li>
-  );
+    if (!imgPath) return null;
+
+    const formattedDate = releaseDate ? format(new Date(releaseDate), 'MMMM d, yyyy') : null;
+    const shortDesc = TrimText(description, 170);
+    const imgSrc = `http://image.tmdb.org/t/p/w500${imgPath}`;
+    const genresElement = genres.map(genreItem => (
+      <li key={genreItem.id} className='genresList__item'>{genreItem.name}</li>
+    )).slice(0, 3);
+
+    return (
+      <li className='movieCard'>
+        <img className="movieImg" src={imgSrc} alt={movieTitle} />
+        <div className="movieCardContent">
+          <TruncatedTitle title={movieTitle} />
+          <span className='releaseDate'>{formattedDate}</span>
+          <ul className='genresList'>
+            {genresElement}
+          </ul>
+          <p className='description'>{shortDesc}</p>
+          <Rate value={userRating} count={10} className="movie-rating" onChange={this.handleRatingChange} />
+          <div className={`ratingCircle ${this.getRatingClass(rating)}`}>
+            {rating.toFixed(1)}
+          </div>
+        </div>
+      </li>
+    );
+  }
 }
 
 MovieCard.propTypes = {
   movieTitle: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  releaseDate: PropTypes.string.isRequired,
+  rating: PropTypes.number,
   genres: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
-  })),
-  description: PropTypes.string,
-  releaseDate: PropTypes.string.isRequired,
-  imgPath: PropTypes.string.isRequired,
+  })).isRequired,
+  onRatingChange: PropTypes.func.isRequired,
+  userRating: PropTypes.number,
+  movieId: PropTypes.number.isRequired,
+  movieDBApi: PropTypes.shape({
+    rateMovie: PropTypes.func.isRequired,
+  }).isRequired,
+  guestSessionId: PropTypes.string.isRequired,
+  imgPath: PropTypes.string
 };
 
 MovieCard.defaultProps = {
   description: '',
-  genres: [],
+  rating: 0,
+  userRating: 0,
+  imgPath: ''
 };
-
-export default MovieCard;

@@ -22,6 +22,30 @@ export default class MovieDBapi {
   searchMovies(query, page) {
     return this.getResource(`/search/movie?query=${query}&language=en-US&page=${page}`);
   }
-}
 
-// https://api.themoviedb.org/3/movie/11?api_key=ad8adbb06e53c3f9318605818058225c
+  createGuestSession = async () => {
+    const response = await this.getResource('/authentication/guest_session/new?language=en-US');
+    return response.guest_session_id;
+  };
+  
+  getGenres = async () => {
+    const response = await this.getResource('/genre/movie/list?language=en-US');
+    return response.genres;
+  };
+  
+  rateMovie = async (movieId, rating, guestSessionId) => {
+    const url = `/movie/${movieId}/rating?guest_session_id=${guestSessionId}`;
+    const response = await fetch(`${this.baseApi}${url}&api_key=${this.token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify({ value: rating })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Could not post rating for movie ${movieId}, received ${response.status}`);
+    }
+    return response.json();
+  }
+}

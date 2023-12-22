@@ -1,39 +1,41 @@
 import PropTypes from 'prop-types';
 import MovieCard from '../MovieCard';
+import { Consumer } from '../../services/Context';
 import './MovieList.css';
 
-function  MovieList({ movieList }) {
-  const leftMovieList = movieList.map((movieItem) => (
-        <MovieCard 
-          key={movieItem.id}
-          movieTitle={movieItem.original_title}
-          releaseDate={movieItem.release_date}
-          genres={movieItem.genres}
-          description={movieItem.overview}
-          imgPath={movieItem.poster_path}
-        />
-    ));
-
+export default function MovieList({ guestSessionId, movieDBApi, onRatingChange, userRatings }) {
   return (
-
-    <ul className='movieList'>
-        {leftMovieList}
-    </ul>
+    <Consumer>
+      {movieList => (
+        <div className="movie-list">
+          {movieList.length > 0 ? movieList.map((movie) => (
+            <MovieCard 
+              key={movie.id}
+              genresID={movie.genre_ids}
+              movieId={movie.id}
+              movieTitle={movie.title}
+              releaseDate={movie.release_date}
+              description={movie.overview}
+              imgPath={movie.poster_path}
+              rating={movie.vote_average}
+              movieDBApi={movieDBApi}
+              guestSessionId={guestSessionId}
+              userRating={userRatings[movie.id]}
+              onRatingChange={onRatingChange}
+              genres={movie.genres.map(genre => ({ id: genre.id, name: genre.name }))}
+            />
+          )) : <p className='empty-result'>No movies found.</p>}
+        </div>
+      )}
+    </Consumer>
   );
-};
+}
 
 MovieList.propTypes = {
-  movieList: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    original_title: PropTypes.string.isRequired,
-    release_date: PropTypes.string.isRequired,
-    genres: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-    })).isRequired,
-    overview: PropTypes.string,
-    poster_path: PropTypes.string.isRequired,
-  })).isRequired,
-};
-
-export default MovieList;
+  guestSessionId: PropTypes.string.isRequired,
+  movieDBApi: PropTypes.shape({
+    rateMovie: PropTypes.func.isRequired
+  }).isRequired,
+  onRatingChange: PropTypes.func.isRequired,
+  userRatings: PropTypes.objectOf(PropTypes.number).isRequired
+}

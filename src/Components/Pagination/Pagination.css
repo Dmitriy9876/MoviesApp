@@ -1,26 +1,16 @@
-/* Стили для основного контейнера пагинации */
 .ant-pagination {
   display: flex;
-  justify-content: center; /* Центрирование пагинации */
-  font-size: 16px; /* Размер шрифта номеров страниц */
+  justify-content: center;
+  font-size: 16px;
 }
   
-/* Стили для элементов списка пагинации */
 .ant-pagination-item {
-  border: none; /* Убрать рамки */
-  margin: 0 11px; /* Расстояние между элементами */
+  border: none;
+  margin: 0 11px;
 }  
-
-.ant-pagination-item-active {
-  background-color: #1890FF !important; /* фон для активного элемента */
-}
   
+.ant-pagination 
 .ant-pagination-item-active a {
-  color: white !important; /* белый цвет текста ссылки для активного элемента */
-}
-  
-.ant-pagination-item-500,
-.ant-pagination-jump-next-custom-icon,
-.ant-pagination-jump-prev-custom-icon {
-  display: none !important;
+  background-color: #1890FF;
+  color: white;
 }

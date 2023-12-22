@@ -1,7 +1,7 @@
 import { Spin } from 'antd';
 import './Loader.css';
 
-function Loader() {
+export default function Loader() {
     return (
         <div className="example">
             <Spin className="loader" tip="Loading...">
@@ -11,5 +11,3 @@ function Loader() {
         
     );
   }
-
-export default Loader;

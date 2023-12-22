@@ -7,5 +7,15 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    margin-top: 150px;
+}
+
+@media (max-width: 974px) {
+    .empty-result {
+        display: block;
+        margin: 0 auto;
+        width: 116px;
+    }
+    .loader {
+        transform: scale(4);
+    }
 }

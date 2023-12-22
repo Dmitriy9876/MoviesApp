@@ -6,97 +6,178 @@ import MovieList from '../MovieList';
 import SearchPanel from '../SearchPanel';
 import PaginationComponent from "../Pagination";
 import Loader from '../Loader';
+import { Provider } from '../../services/Context';
 import './App.css';
 
-class App extends Component {
-
-  state = {
-    movieList: [],
-    loading: false,
-    searchTerm: '',
-    error: null,
-    currentPage: 1, // Текущая страница для пагинации
-    totalResults: 0, // Общее количество результатов для пагинации
-  };
-
-  componentDidMount() {
-    this.fetchAndSetMovies();
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      movieList: [],
+      loading: true,
+      searchTerm: '',
+      error: null,
+      currentPage: 1,
+      totalResults: 0,
+      guestSessionId: null,
+      userRatings: {},
+      showOnlyRated: false,
+      searchPage: 1,
+      ratedPage: 1
+    };
+    this.movieDBApi = new MovieDBapi();
   }
 
-  componentDidUpdate(prevState) {
-    if (this.state.currentPage !== prevState.currentPage) {
-      window.scrollTo(0, 0);
+  componentDidMount() {
+    this.movieDBApi.createGuestSession().then(sessionId => {
+      this.setState({ guestSessionId: sessionId });
+      this.fetchAndSetMovies();
+    });
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    const { currentPage, showOnlyRated } = this.state;
+  
+    if (currentPage !== prevState.currentPage) {
+      if (showOnlyRated) {
+        this.fetchRatedMovies();
+      } else {
+        this.fetchAndSetMovies();
+      }
     }
   }
 
-  movieDBApi = new MovieDBapi();
-
-  fetchAndSetMovies = async (searchTerm = '', page = 1) => {
+  fetchAndSetMovies = async () => {
+    window.scrollTo(0, 0);
     this.setState({ loading: true, error: null });
+    const { searchTerm, currentPage } = this.state;
+    this.performMovieFetch(searchTerm, currentPage);
+  };
   
+  performMovieFetch = async (searchTerm, page) => {
     try {
-      let data;
-      if (searchTerm) {
-        data = await this.movieDBApi.searchMovies(searchTerm, page);
-      } else {
-        data = await this.movieDBApi.getPopularMovies(page);
-      }
+      const allGenres = await this.movieDBApi.getGenres();
+      const data = searchTerm
+        ? await this.movieDBApi.searchMovies(searchTerm, page)
+        : await this.movieDBApi.getPopularMovies(page);
   
-      // Отфильтровываем фильмы без imgPath
-      const validMovies = data.results.filter(movie => movie.poster_path);
+      const moviesWithGenres = data.results.map(movie => ({
+        ...movie,
+        genres: movie.genre_ids.map(genreId => allGenres.find(genre => genre.id === genreId))
+      }));
   
-      // Выбираем первые шесть фильмов из отфильтрованных результатов
-      const moviesToShow = validMovies.slice(0, 6);
+      const moviesWithGenresAndRating = await Promise.all(moviesWithGenres.map(async movie => ({
+        ...movie,
+        rating: await this.calculateRating(movie.id)
+      })));
   
       this.setState({
-        movieList: moviesToShow,
+        movieList: moviesWithGenresAndRating,
         loading: false,
         totalResults: data.total_results,
         currentPage: page,
+        showOnlyRated: false,
       });
-  
-      if (moviesToShow.length === 0) {
-        this.setState({ error: 'No movies found.' });
-      }
     } catch (error) {
       this.setState({ error: 'Error fetching movies!', loading: false });
     }
   };
- 
+
+  calculateRating = async (movieId) => {
+    try {
+      const movie = await this.movieDBApi.getMovie(movieId);
+      return movie.vote_average;
+    } catch (error) {
+      console.error('Error when getting a movie rating: ', error);
+      return 0;
+    }
+  };
 
   handleSearch = (searchTerm) => {
-    this.setState({ searchTerm });
-    this.fetchAndSetMovies(searchTerm);
+    this.setState(prevState => ({
+      searchTerm, 
+      currentPage: searchTerm !== prevState.searchTerm ? 1 : prevState.searchPage,
+      searchPage: searchTerm !== prevState.searchTerm ? 1 : prevState.searchPage,
+      showOnlyRated: false 
+    }), this.fetchAndSetMovies);
+  };
+
+  handleRatedTab = () => {
+    this.setState(prevState => ({ 
+      currentPage: prevState.ratedPage,
+      showOnlyRated: true 
+    }), this.fetchRatedMovies);
   };
 
   handlePageChange = (page) => {
-    this.setState({ currentPage: page });
-    this.fetchAndSetMovies(this.state.searchTerm, page);
+    this.setState(prevState => ({
+      currentPage: page,
+      ...(prevState.showOnlyRated ? { ratedPage: page } : { searchPage: page })
+    }));
+  };
+
+  fetchRatedMovies = async () => {
+    window.scrollTo(0, 0);
+    this.setState({ loading: true });
+
+    const { userRatings, currentPage } = this.state;
+    const ratedMovieIds = Object.keys(userRatings)
+    const pageSize = 20;
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const currentRatedMovieIds = ratedMovieIds.slice(startIndex, endIndex);
+
+    const ratedMoviesWithDetails = await Promise.all(currentRatedMovieIds.map(async movieId => {
+      const movie = await this.movieDBApi.getMovie(movieId);
+      return { ...movie, rating: userRatings[movieId] };
+    }));
+
+    this.setState({ 
+      movieList: ratedMoviesWithDetails, 
+      loading: false, 
+      error: ratedMoviesWithDetails.length > 0 ? null : 'No rated movies found.',
+      showOnlyRated: true,
+      totalResults: ratedMovieIds.length
+    });
+  };
+
+  handleRatingChange = (movieId, newRating) => {
+    this.setState(prevState => ({
+      userRatings: {
+        ...prevState.userRatings,
+        [movieId]: newRating
+      }
+    }));
   };
 
   render() {
-    const { movieList, loading, error, currentPage, totalResults } = this.state;
-    const errorAlert = error && <Alert message="Ошибка!" description={error} type="error" showIcon closable />;
-
+    const { movieList, loading, error, currentPage, totalResults, guestSessionId, userRatings } = this.state;
+    const errorAlert = error && <Alert message="Error!" description={error} type="error" showIcon closable />;
+    
     return (
-      <div className="app">
-        <Offline>
-          <Alert message="Нет подключения к интернету" type="warning" showIcon closable />
-        </Offline>
-        <Online>
-          <SearchPanel onSearch={this.handleSearch} />
-          {loading && <Loader />}
-          {error && errorAlert}
-          {!loading && !error && <MovieList movieList={movieList} />}
-          {!loading && !error && <PaginationComponent
-            current={currentPage}
-            total={totalResults}
-            onChange={this.handlePageChange}
-          />}
-        </Online>
-      </div>
+      <Provider value={movieList}> 
+        <div className="app">
+          <Offline>
+            <Alert message="No internet connection" type="warning" showIcon closable />
+          </Offline>
+          <Online>
+            <SearchPanel onSearch={this.handleSearch} onRated={this.handleRatedTab} />
+            {loading && <Loader />}
+            {error && errorAlert}
+            {!loading && !error && <MovieList
+              guestSessionId={guestSessionId}
+              movieDBApi={this.movieDBApi}
+              onRatingChange={this.handleRatingChange}
+              userRatings={userRatings}
+            />}
+            {!loading && !error && <PaginationComponent
+              current={currentPage}
+              total={totalResults}
+              onChange={this.handlePageChange}
+            />}
+          </Online>
+        </div>
+      </Provider>
     );
   }
 }
-
-export default App;

@@ -1,4 +1,4 @@
-function TrimText(str, len) {
+export default function TrimText(str, len) {
     if (str.length <= len) return str;
   
     const subStr = str.slice(0, len);
@@ -6,5 +6,3 @@ function TrimText(str, len) {
   
     return `${subStr.slice(0, spaceIdx)}...`;
   }
-  
-  export default TrimText;
