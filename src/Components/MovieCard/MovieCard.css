@@ -1,0 +1,53 @@
+.movieCard {
+    display: flex;
+    width: 451px;
+    height: 279px;
+    margin-bottom: 36px;
+    margin-right: 36px;
+    box-shadow: 0px 4px 12px 0px #00000026;
+}
+
+.movieImg {
+    width: 183px;
+    margin-right: 20px;
+}
+
+.movieTitle {
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-size: 20px;
+}
+
+.releaseDate {
+    margin-top: 7px;
+    font-size: 12px;
+    color: #827E7E;
+    line-height: 22px;
+}
+
+.genresList {
+    display: flex;
+    flex-wrap: wrap;
+    padding-left: 0;
+    margin-top: 9px;
+}
+
+.genresList__item {
+    font-size: 12px;
+    list-style: none;
+    margin-right: 17px;
+    color: rgba(0, 0, 0, 0.65);    
+    border: 1px solid #D9D9D9;
+    border-radius: 2px;
+    background: #FAFAFA;
+    padding: 2px 3px 3px 5px;
+    margin-bottom: 7px;
+}
+
+.description {    
+    width: 228px;
+    height: 129px;
+    font-size: 12px;
+    line-height: 22px;
+    margin: 0;
+}
