@@ -28,17 +28,20 @@ export default class MovieCard extends Component {
   };
 
   render() {
-    const { movieTitle, description, releaseDate, imgPath, rating, genres, userRating } = this.props;
-
-    if (!imgPath) return null;
-
+    const { movieTitle, description, releaseDate, rating, genres, userRating } = this.props;
+    
+    let { imgPath } = this.props;
+    if (!imgPath) {
+      imgPath = "https://static.displate.com/857x1200/displate/2022-04-15/7422bfe15b3ea7b5933dffd896e9c7f9_46003a1b7353dc7b5a02949bd074432a.jpg";
+    }
+  
     const formattedDate = releaseDate ? format(new Date(releaseDate), 'MMMM d, yyyy') : null;
     const shortDesc = TrimText(description, 170);
-    const imgSrc = `http://image.tmdb.org/t/p/w500${imgPath}`;
+    const imgSrc = imgPath.startsWith('http') ? imgPath : `http://image.tmdb.org/t/p/w500${imgPath}`;
     const genresElement = genres.map(genreItem => (
       <li key={genreItem.id} className='genresList__item'>{genreItem.name}</li>
     )).slice(0, 3);
-
+  
     return (
       <li className='movieCard'>
         <img className="movieImg" src={imgSrc} alt={movieTitle} />
@@ -49,7 +52,7 @@ export default class MovieCard extends Component {
             {genresElement}
           </ul>
           <p className='description'>{shortDesc}</p>
-          <Rate value={userRating} count={10} className="movie-rating" onChange={this.handleRatingChange} />
+          <Rate value={userRating} count={10} allowHalf className="movie-rating" onChange={this.handleRatingChange} />
           <div className={`ratingCircle ${this.getRatingClass(rating)}`}>
             {rating.toFixed(1)}
           </div>
@@ -83,4 +86,4 @@ MovieCard.defaultProps = {
   rating: 0,
   userRating: 0,
   imgPath: ''
-};
+}

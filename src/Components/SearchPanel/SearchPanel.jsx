@@ -34,9 +34,13 @@ export default class SearchPanel extends Component {
   };
 
   handleSearchChange(event) {
-    this.setState({ searchTerm: event.target.value });
-    this.debouncedOnSearch(event.target.value);
+  const searchTerm = event.target.value;
+  this.setState({ searchTerm });
+
+  if (searchTerm.trim() || searchTerm === '') {
+    this.debouncedOnSearch(searchTerm.trim());
   }
+}
 
   setActiveButton = (buttonName) => {
     this.setState({ activeButton: buttonName });

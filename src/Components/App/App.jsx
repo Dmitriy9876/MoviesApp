@@ -23,7 +23,7 @@ export default class App extends Component {
       userRatings: {},
       showOnlyRated: false,
       searchPage: 1,
-      ratedPage: 1
+      ratedPage: 1,
     };
     this.movieDBApi = new MovieDBapi();
   }
@@ -49,11 +49,11 @@ export default class App extends Component {
 
   fetchAndSetMovies = async () => {
     window.scrollTo(0, 0);
-    this.setState({ loading: true, error: null });
+    this.setState({ loading: true, error: null});
     const { searchTerm, currentPage } = this.state;
     this.performMovieFetch(searchTerm, currentPage);
   };
-  
+
   performMovieFetch = async (searchTerm, page) => {
     try {
       const allGenres = await this.movieDBApi.getGenres();
@@ -70,7 +70,7 @@ export default class App extends Component {
         ...movie,
         rating: await this.calculateRating(movie.id)
       })));
-  
+
       this.setState({
         movieList: moviesWithGenresAndRating,
         loading: false,
@@ -119,23 +119,23 @@ export default class App extends Component {
   fetchRatedMovies = async () => {
     window.scrollTo(0, 0);
     this.setState({ loading: true });
-
-    const { userRatings, currentPage } = this.state;
-    const ratedMovieIds = Object.keys(userRatings)
+  
+    const { userRatings, currentPage, error } = this.state;
+    const ratedMovieIds = Object.keys(userRatings);
     const pageSize = 20;
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const currentRatedMovieIds = ratedMovieIds.slice(startIndex, endIndex);
-
+  
     const ratedMoviesWithDetails = await Promise.all(currentRatedMovieIds.map(async movieId => {
       const movie = await this.movieDBApi.getMovie(movieId);
       return { ...movie, rating: userRatings[movieId] };
     }));
-
-    this.setState({ 
-      movieList: ratedMoviesWithDetails, 
-      loading: false, 
-      error: ratedMoviesWithDetails.length > 0 ? null : 'No rated movies found.',
+  
+    this.setState({
+      movieList: ratedMoviesWithDetails,
+      loading: false,
+      error: ratedMoviesWithDetails.length === 0 ? null : error,
       showOnlyRated: true,
       totalResults: ratedMovieIds.length
     });
@@ -152,7 +152,6 @@ export default class App extends Component {
 
   render() {
     const { movieList, loading, error, currentPage, totalResults, guestSessionId, userRatings } = this.state;
-    const errorAlert = error && <Alert message="Error!" description={error} type="error" showIcon closable />;
     
     return (
       <Provider value={movieList}> 
@@ -163,7 +162,6 @@ export default class App extends Component {
           <Online>
             <SearchPanel onSearch={this.handleSearch} onRated={this.handleRatedTab} />
             {loading && <Loader />}
-            {error && errorAlert}
             {!loading && !error && <MovieList
               guestSessionId={guestSessionId}
               movieDBApi={this.movieDBApi}
